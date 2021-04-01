@@ -1,14 +1,16 @@
 CREATE DEFINER=`root`@`localhost` PROCEDURE `timeperiodtype`(
 		IN display varchar(250),IN disease varchar(500),
 		IN start_date date,IN end_date date,IN visit_type varchar(50),
-        IN gender_string varchar(50),IN group_by varchar(250),IN timeperiod_type VARCHAR(200) ,IN year_type varchar(100))
+        IN gender_string varchar(50),IN district_list varchar(200), IN taluka_list varchar(200),
+        IN group_by varchar(250),IN timeperiod_type VARCHAR(200) ,IN year_type varchar(100))
 BEGIN
 
 	DECLARE display_string VARCHAR(250);
     DECLARE agg VARCHAR(500);
     DECLARE group_by_string VARCHAR(500);
     DECLARE financial VARCHAR(600);
-    
+    DECLARE district_id_string VARCHAR(250);
+    DECLARE taluka_id_string VARCHAR(250);
     
     SET @display_string=NULL;
     SET @group_by_string=NULL;
@@ -35,6 +37,19 @@ BEGIN
 	ELSE 
 		SET @visit_type_filter=CONCAT("VisitType in (",visit_type,")");
 	END IF;
+    
+	IF(district_list='')THEN
+		SET @district_id_string=CONCAT("DistrictId IN (select distinct DistrictId from DMHP.ReportData)");
+    ELSE
+		SET @district_id_string:= CONCAT("DistrictId IN (",district_list,")");
+    END IF;
+    
+	IF(taluka_list='')THEN
+		SET @taluka_id_string=CONCAT("(TalukaId IN (select distinct TalukaId from DMHP.ReportData) OR TalukaId is NULL)");
+    ELSE
+		SET @taluka_id_string:= CONCAT("TalukaId IN (",taluka_list,")");
+    END IF;
+    
     
     
 -- This particular if-else set will tell what to display at output of mysql..    
@@ -285,8 +300,8 @@ BEGIN
 
 	  
 	SET @s=CONCAT("select ",@display_string,",",@agg,",sum(",@disease_filter,") as TotalCases 
-			from ReportData where ",@gender_string_filter," and ",@visit_type_filter," and ReportingMonthyear 
-                BETWEEN '",start_date,"' and '",end_date,"' group by ",@group_by_string);
+			from ReportData where ",@gender_string_filter," and ",@visit_type_filter," and ",@district_id_string," and "
+            ,@taluka_id_string," and ReportingMonthyear BETWEEN '",start_date,"' and '",end_date,"' group by ",@group_by_string);
 	 
 
     
@@ -297,7 +312,7 @@ BEGIN
 
 
 END
-
 -- call DMHP.timeperiodtype('ReportingMonthyear', 'SMD,CMD,SuicideAttempts,Referred', 
-					'2017-08-01', '2018-12-01', "'new'", "'M'", 'ReportingMonthyear','quaterlly','f');
+--					'2017-08-01', '2018-12-01', "'new'", "'M'",'','','ReportingMonthyear','annually','c');
+
 
