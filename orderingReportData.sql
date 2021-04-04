@@ -7,9 +7,13 @@ CREATE table ReportData as
 SET SQL_SAFE_UPDATES=0;
 update DMHP.ReportData SET FacilityType=2 where MncHospitalId is not NULL;
 update DMHP.ReportData SET TalukaId=MncHospitalId where TalukaId=0;
+update DMHP.ReportData SET FacilityType=3 where PhcId !=0;
+update DMHP.ReportData SET FacilityType=4 where ChcId !=0;
 SET SQL_SAFE_UPDATES=1;
 
 Alter Table DMHP.ReportData DROP column MncHospitalId;
+Alter Table DMHP.ReportData DROP column PhcId;
+Alter Table DMHP.ReportData DROP column ChcId;
 
 
 SET SQL_SAFE_UPDATES=0;
