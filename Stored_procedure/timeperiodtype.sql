@@ -1,7 +1,7 @@
 CREATE DEFINER=`root`@`localhost` PROCEDURE `timeperiodtype`(
 		IN display varchar(250),IN disease varchar(500),
-		IN start_date date,IN end_date date,IN visit_type varchar(50),
-        IN gender_string varchar(50),IN district_list varchar(200), IN taluka_list varchar(200),
+		IN start_date date,IN end_date date,IN visit_type varchar(50),IN gender_string varchar(50),
+        IN facilitytype_list varchar(200),IN district_list varchar(200), IN taluka_list varchar(200),
         IN group_by varchar(250),IN timeperiod_type VARCHAR(200) ,IN year_type varchar(100))
 BEGIN
 
@@ -11,6 +11,7 @@ BEGIN
     DECLARE financial VARCHAR(600);
     DECLARE district_id_string VARCHAR(250);
     DECLARE taluka_id_string VARCHAR(250);
+    DECLARE facilitytype_id_string VARCHAR(250);
     
     SET @display_string=NULL;
     SET @group_by_string=NULL;
@@ -38,25 +39,35 @@ BEGIN
 		SET @visit_type_filter=CONCAT("VisitType in (",visit_type,")");
 	END IF;
     
+    
+    	IF(facilitytype_list='')THEN
+		SET @facilitytype_id_string=CONCAT("FacilityTypeId IN (select distinct FacilityTypeId from DMHP.ReportData)");
+	ELSE
+		SET @facilitytype_id_string=CONCAT("FacilityTypeId IN (",facilitytype_list,")");
+    	END IF;
+    
 	IF(district_list='')THEN
 		SET @district_id_string=CONCAT("DistrictId IN (select distinct DistrictId from DMHP.ReportData)");
-    ELSE
+    	ELSE
 		SET @district_id_string:= CONCAT("DistrictId IN (",district_list,")");
-    END IF;
+    	END IF;
     
 	IF(taluka_list='')THEN
 		SET @taluka_id_string=CONCAT("(TalukaId IN (select distinct TalukaId from DMHP.ReportData) OR TalukaId is NULL)");
-    ELSE
+    	ELSE
 		SET @taluka_id_string:= CONCAT("TalukaId IN (",taluka_list,")");
-    END IF;
+    	END IF;
+    
+    
+    
     
     
     
 -- This particular if-else set will tell what to display at output of mysql..    
        
-    IF(FIND_IN_SET('ReportId',display))THEN
-		SET @display_string=CONCAT("ReportId");
-	END IF;
+	    IF(FIND_IN_SET('ReportId',display))THEN
+			SET @display_string=CONCAT("ReportId");
+		END IF;
         
     IF(FIND_IN_SET('DistrictId',display))THEN
 		IF(@display_string is NULL)THEN
@@ -298,10 +309,12 @@ BEGIN
 	SET @disease_filter := CONCAT(replace(disease,",","+"));   
        
 
-	  
+	
 	SET @s=CONCAT("select ",@display_string,",",@agg,",sum(",@disease_filter,") as TotalCases 
-			from ReportData where ",@gender_string_filter," and ",@visit_type_filter," and ",@district_id_string," and "
-            ,@taluka_id_string," and ReportingMonthyear BETWEEN '",start_date,"' and '",end_date,"' group by ",@group_by_string);
+			from ReportData where ",@gender_string_filter," and ",@visit_type_filter," and ",@facilitytype_id_string," and ",
+            @district_id_string," and ",@taluka_id_string," and ReportingMonthyear BETWEEN '",start_date,"' and '",end_date,"' group by ",
+            @group_by_string);
+	
 	 
 
     
@@ -312,7 +325,3 @@ BEGIN
 
 
 END
--- call DMHP.timeperiodtype('ReportingMonthyear', 'SMD,CMD,SuicideAttempts,Referred', 
---					'2017-08-01', '2018-12-01', "'new'", "'M'",'','','ReportingMonthyear','annually','c');
-
-
